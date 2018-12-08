@@ -1,4 +1,4 @@
-func aocD4a(_ input: [(String, String)]) {
+func aocD7a(_ input: [(String, String)]) {
 	var prereqs = [String: Set<String>]()
 	var all: Set<String> = []
 	for (from, to) in input {
@@ -23,7 +23,7 @@ func aocD4a(_ input: [(String, String)]) {
 	print(order.joined().uppercased())
 }
 
-func aocD4b(_ input: [(String, String)]) {
+func aocD7b(_ input: [(String, String)]) {
 	var prereqs = [String: Set<String>]()
 	var all: Set<String> = []
 	for (from, to) in input {
@@ -79,5 +79,5 @@ let steps = str.lowercased().split(separator: "\n").map { (line) -> (String, Str
 	return (String(words[first]), String(words[second]))
 }
 
-aocD4a(steps)
-aocD4b(steps)
+aocD7a(steps)
+aocD7b(steps)

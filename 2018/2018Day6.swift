@@ -1,4 +1,4 @@
-func aocD4a(_ input: [(x: Int, y: Int)]) {
+func aocD6a(_ input: [(x: Int, y: Int)]) {
 	var areas = [(count: Int, infinite: Bool)](repeating: (0, false), count: input.count)
 	let minX = input.map({ $0.x }).min()!
 	let maxX = input.map({ $0.x }).max()!
@@ -19,7 +19,7 @@ func aocD4a(_ input: [(x: Int, y: Int)]) {
 	print(areas.lazy.filter({ !$0.infinite }).map({ $0.count }).max()!)
 }
 
-func aocD4b(_ input: [(x: Int, y: Int)]) {
+func aocD6b(_ input: [(x: Int, y: Int)]) {
 	var count = 0
 	let minX = input.map({ $0.x }).min()!
 	let maxX = input.map({ $0.x }).max()!
@@ -44,5 +44,5 @@ let numbers = str.split(separator: "\n").map { line -> (Int, Int) in
 	return (nums[0], nums[1])
 }
 
-aocD4a(numbers)
-aocD4b(numbers)
+aocD6a(numbers)
+aocD6b(numbers)
