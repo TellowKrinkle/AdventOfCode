@@ -33,8 +33,8 @@ func aocD10(_ input: [(position: Point, velocity: Point)]) {
 		output = points
 		count += 1
 	}
-	let xrange = points.lazy.map({ $0.position.x }).minmax()!
-	let yrange = points.lazy.map({ $0.position.y }).minmax()!
+	let xrange = output.lazy.map({ $0.position.x }).minmax()!
+	let yrange = output.lazy.map({ $0.position.y }).minmax()!
 
 	var arr = [[Bool]](repeating: [Bool](repeating: false, count: xrange.count), count: yrange.count)
 	for point in output {
