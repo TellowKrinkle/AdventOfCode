@@ -57,7 +57,7 @@ enum Track: Character {
 			case .right: return .down
 			case .left: return .up
 			}
-		default: fatalError("Shouldn't use go on track of type \(self)")
+		case .intersection, .none: fatalError("Shouldn't use go on track of type \(self)")
 		}
 	}
 }
@@ -73,14 +73,14 @@ enum Turn {
 	}
 }
 
-struct Cart {
+class Cart: CustomStringConvertible {
 	var coord: Point
 
 	var facing: Direction
 	var nextTurn: Turn = .left
 	var removed: Bool = false
 
-	mutating func go(on track: Track) {
+	func go(on track: Track) {
 		if case .intersection = track {
 			facing = nextTurn.apply(to: facing)
 			switch nextTurn {
@@ -98,6 +98,10 @@ struct Cart {
 	init(coord: Point, facing: Direction) {
 		(self.coord, self.facing) = (coord, facing)
 	}
+
+	var description: String {
+		return "Cart(coord: \(coord), facing: \(facing), nextTurn: \(nextTurn), removed: \(removed))"
+	}
 }
 
 func aocD13(_ track: [[Track]], _ carts: [Cart]) {
@@ -105,28 +109,24 @@ func aocD13(_ track: [[Track]], _ carts: [Cart]) {
 	var positions = Dictionary(uniqueKeysWithValues: carts.lazy.map({ ($0.coord, $0) }) )
 	while carts.count > 1 {
 		carts.sort(by: { $0.coord.y != $1.coord.y ? $0.coord.y < $1.coord.y : $0.coord.x < $1.coord.x })
-		for index in carts.indices {
-			guard !carts[index].removed else { continue }
-			let trackPiece = track[carts[index].coord.y][carts[index].coord.x]
-			positions[carts[index].coord] = nil
-			carts[index].go(on: trackPiece)
-			if positions[carts[index].coord] != nil {
-				let crash = carts[index].coord
-				print(crash)
-				for index in carts.indices {
-					if carts[index].coord == crash {
-						carts[index].removed = true
-					}
-				}
-				positions[crash] = nil
+		for cart in carts {
+			guard !cart.removed else { continue }
+			let trackPiece = track[cart.coord.y][cart.coord.x]
+			positions[cart.coord] = nil
+			cart.go(on: trackPiece)
+			if let other = positions[cart.coord] {
+				positions[cart.coord] = nil
+				print(cart.coord)
+				cart.removed = true
+				other.removed = true
 			}
 			else {
-				positions[carts[index].coord] = carts[index]
+				positions[cart.coord] = cart
 			}
 		}
 		carts.removeAll(where: { $0.removed })
 		if carts.count == 1 {
-			print(carts.first!)
+			print(carts[0])
 		}
 	}
 }
