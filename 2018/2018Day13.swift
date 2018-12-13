@@ -104,7 +104,7 @@ func aocD13(_ track: [[Track]], _ carts: [Cart]) {
 	var carts = carts
 	var positions = Dictionary(uniqueKeysWithValues: carts.lazy.map({ ($0.coord, $0) }) )
 	while carts.count > 1 {
-		carts.sort(by: { $0.coord.y != $1.coord.y ? $0.coord.x < $1.coord.x : $0.coord.x < $1.coord.x })
+		carts.sort(by: { $0.coord.y != $1.coord.y ? $0.coord.y < $1.coord.y : $0.coord.x < $1.coord.x })
 		for index in carts.indices {
 			guard !carts[index].removed else { continue }
 			let trackPiece = track[carts[index].coord.y][carts[index].coord.x]
