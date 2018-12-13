@@ -94,12 +94,16 @@ struct Cart {
 		}
 		coord = coord + facing.coords
 	}
+
+	init(coord: Point, facing: Direction) {
+		(self.coord, self.facing) = (coord, facing)
+	}
 }
 
 func aocD13(_ track: [[Track]], _ carts: [Cart]) {
 	var carts = carts
 	var positions = Dictionary(uniqueKeysWithValues: carts.lazy.map({ ($0.coord, $0) }) )
-	outerWhile: while true {
+	while carts.count > 1 {
 		carts.sort(by: { $0.coord.y != $1.coord.y ? $0.coord.x < $1.coord.x : $0.coord.x < $1.coord.x })
 		for index in carts.indices {
 			guard !carts[index].removed else { continue }
@@ -120,9 +124,9 @@ func aocD13(_ track: [[Track]], _ carts: [Cart]) {
 				positions[carts[index].coord] = carts[index]
 			}
 		}
-		if carts.lazy.filter({ !$0.removed }).count == 1 {
-			print(carts.lazy.filter({ !$0.removed }).first!)
-			break
+		carts.removeAll(where: { $0.removed })
+		if carts.count == 1 {
+			print(carts.first!)
 		}
 	}
 }
@@ -135,7 +139,7 @@ var carts: [Cart] = []
 let track = str.split(separator: "\n").enumerated().map { y, line in
 	return line.enumerated().map { x, char -> Track in
 		if let dir = Direction(rawValue: char) {
-			carts.append(Cart(coord: Point(x: x, y: y), facing: dir, nextTurn: .left, removed: false))
+			carts.append(Cart(coord: Point(x: x, y: y), facing: dir))
 			return dir == .left || dir == .right ? .horizontal : .vertical
 		}
 		return Track(rawValue: char)!
