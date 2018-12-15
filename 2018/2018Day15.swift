@@ -73,7 +73,7 @@ func fieldString(_ field: [[Space]]) -> String {
 	return field.lazy.map({ String($0.lazy.map({ $0.rawValue })) }).joined(separator: "\n")
 }
 
-func aocD14(_ input: [[Space]], beings: [Being]) {
+func aocD15(_ input: [[Space]], beings: [Being]) {
 	var input = input
 	var beings = beings
 
@@ -121,6 +121,10 @@ func aocD14(_ input: [[Space]], beings: [Being]) {
 		if !action { break }
 		rounds += 1
 	}
+	print(fieldString(input))
+	for being in beings where being.hitpoints > 0 {
+		print("\(being.race == .elf ? "   Elf" : "Goblin") at \(being.coord): \(being.hitpoints)")
+	}
 	let remainingHealth = beings.map({ $0.hitpoints }).filter({ $0 > 0 }).reduce(0, +)
 	print("\(rounds) rounds, \(remainingHealth) health, \(rounds * remainingHealth)")
 	if beings.lazy.filter({ $0.race == .elf && $0.hitpoints <= 0 }).isEmpty {
@@ -143,4 +147,4 @@ let input = str.split(separator: "\n").enumerated().map { y, line in
 	}
 }
 
-aocD14(input, beings: beings)
+aocD15(input, beings: beings)
