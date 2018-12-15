@@ -73,19 +73,21 @@ func fieldString(_ field: [[Space]]) -> String {
 	return field.lazy.map({ String($0.lazy.map({ $0.rawValue })) }).joined(separator: "\n")
 }
 
-func aocD15(_ input: [[Space]], beings: [Being]) {
+func aocD15(_ input: [[Space]], beings: [Being], printFields: Bool) -> Bool {
 	var input = input
 	var beings = beings
 
-	print(fieldString(input))
+	if printFields { print(fieldString(input)) }
 	var rounds = 0
 	outerWhile: while true {
 		beings.sort(by: { $0.coord < $1.coord })
 		var action = false
 		defer {
-			print(fieldString(input))
-			for being in beings where being.hitpoints > 0 {
-				print("\(being.race == .elf ? "   Elf" : "Goblin") at \(being.coord): \(being.hitpoints)")
+			if printFields {
+				print(fieldString(input))
+				for being in beings where being.hitpoints > 0 {
+					print("\(being.race == .elf ? "   Elf" : "Goblin") at \(being.coord): \(being.hitpoints)")
+				}
 			}
 		}
 		for being in beings where being.hitpoints > 0 {
@@ -127,22 +129,29 @@ func aocD15(_ input: [[Space]], beings: [Being]) {
 	print("\(rounds) rounds, \(remainingHealth) health, \(rounds * remainingHealth)")
 	if beings.lazy.filter({ $0.race == .elf && $0.hitpoints <= 0 }).isEmpty {
 		print("No dead elves")
+		return true
 	}
+	return false
 }
 
 import Foundation
 let str = try! String(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1]))
-let baseElfAttack = Int(CommandLine.arguments[2])!
 
 var beings: [Being] = []
 
 let input = str.split(separator: "\n").enumerated().map { y, line in
 	line.enumerated().compactMap { x, space -> Space? in
 		if let race = Being.Race(rawValue: space) {
-			beings.append(Being(race: race, at: Point(x: x, y: y), attack: race == .goblin ? 3 : baseElfAttack))
+			beings.append(Being(race: race, at: Point(x: x, y: y), attack: 3))
 		}
 		return Space(rawValue: space)
 	}
 }
 
-aocD15(input, beings: beings)
+for power in 3...200 {
+	let newBeings = beings.map({ Being(race: $0.race, at: $0.coord, attack: $0.race == .goblin ? 3 : power) })
+	print("Power: \(power)")
+	if aocD15(input, beings: newBeings, printFields: false) {
+		break
+	}
+}
