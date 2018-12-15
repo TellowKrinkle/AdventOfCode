@@ -82,13 +82,19 @@ func aocD15(_ input: [[Space]], beings: [Being]) {
 	outerWhile: while true {
 		beings.sort(by: { $0.coord < $1.coord })
 		var action = false
+		defer {
+			print(fieldString(input))
+			for being in beings where being.hitpoints > 0 {
+				print("\(being.race == .elf ? "   Elf" : "Goblin") at \(being.coord): \(being.hitpoints)")
+			}
+		}
 		for being in beings where being.hitpoints > 0 {
 			input[being.coord.y][being.coord.x] = .open
 			let targets = beings.filter({ being.race != $0.race && $0.hitpoints > 0 })
 			if targets.isEmpty {
 				break outerWhile
 			}
-			let inRange = Array(targets.flatMap({ $0.coord.range(in: input) }))
+			let inRange = targets.flatMap({ $0.coord.range(in: input) })
 			if !inRange.contains(being.coord) {
 				let distances = being.coord.distances(in: input)
 				let inRangeDistances = inRange.compactMap({ spot in distances[spot].map({ (spot, $0) }) })
@@ -114,16 +120,8 @@ func aocD15(_ input: [[Space]], beings: [Being]) {
 				}
 			}
 		}
-		print(fieldString(input))
-		for being in beings where being.hitpoints > 0 {
-			print("\(being.race == .elf ? "   Elf" : "Goblin") at \(being.coord): \(being.hitpoints)")
-		}
 		if !action { break }
 		rounds += 1
-	}
-	print(fieldString(input))
-	for being in beings where being.hitpoints > 0 {
-		print("\(being.race == .elf ? "   Elf" : "Goblin") at \(being.coord): \(being.hitpoints)")
 	}
 	let remainingHealth = beings.map({ $0.hitpoints }).filter({ $0 > 0 }).reduce(0, +)
 	print("\(rounds) rounds, \(remainingHealth) health, \(rounds * remainingHealth)")
