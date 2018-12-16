@@ -50,7 +50,7 @@ struct Instruction {
 	}
 }
 
-func aocD16(_ input: [(from: [Int], instr: Instruction, to: [Int])]) {
+func aocD16a(_ input: [(from: [Int], instr: Instruction, to: [Int])]) {
 	print(input.lazy.map { (from, instr, to) in
 		Opcode.allCases.lazy.filter { $0.exec(instr: instr, input: from) == to }.count
 	}.filter({ $0 >= 3 }).count)
@@ -99,5 +99,5 @@ let testProgram = str.components(separatedBy: "\n\n\n\n")[1].split(separator: "\
 	return Instruction(line.split(separator: " ").lazy.map { Int($0)! })!
 }
 
-aocD16(input)
+aocD16a(input)
 aocD16b(input, program: testProgram)
