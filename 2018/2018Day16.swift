@@ -13,7 +13,7 @@ extension Sequence {
 enum Opcode {
 	case addr, addi, mulr, muli, banr, bani, borr, bori, setr, seti, gtir, gtri, gtrr, eqir, eqri, eqrr
 
-	static var allCases: [Opcode] = [.addr, .addi, .mulr, .muli, .banr, .bani, .borr, .bori, .setr, .seti, .gtir, .gtri, .gtrr, .eqir, .eqri, .eqrr]
+	static let allCases: [Opcode] = [.addr, .addi, .mulr, .muli, .banr, .bani, .borr, .bori, .setr, .seti, .gtir, .gtri, .gtrr, .eqir, .eqri, .eqrr]
 
 	func exec(instr: Instruction, input: [Int]) -> [Int] {
 		var output = input
