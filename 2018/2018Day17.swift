@@ -14,6 +14,45 @@ enum Area {
 	}
 }
 
+struct Grid<Element> {
+	var xRange: ClosedRange<Int>
+	var yRange: ClosedRange<Int>
+	var storage: [Element]
+
+	init(repeating element: Element, x: ClosedRange<Int>, y: ClosedRange<Int>) {
+		xRange = x
+		yRange = y
+		storage = [Element](repeating: element, count: xRange.count * yRange.count)
+	}
+
+	subscript(x x: Int, y y: Int) -> Element {
+		get {
+			precondition(xRange.contains(x) && yRange.contains(y))
+			let xIndex = x - xRange.lowerBound
+			let yIndex = y - yRange.lowerBound
+			return storage[xRange.count * yIndex + xIndex]
+		}
+		set {
+			precondition(xRange.contains(x) && yRange.contains(y))
+			let xIndex = x - xRange.lowerBound
+			let yIndex = y - yRange.lowerBound
+			storage[xRange.count * yIndex + xIndex] = newValue
+		}
+	}
+
+	func row(at y: Int) -> ArraySlice<Element> {
+		precondition(yRange.contains(y))
+		let yIndex = y - yRange.lowerBound
+		return storage[(yIndex * xRange.count)..<((yIndex + 1) * xRange.count)]
+	}
+
+	var rows: LazyMapCollection<ClosedRange<Int>, ArraySlice<Element>> {
+		return yRange.lazy.map { self.row(at: $0) }
+	}
+}
+
+import Dispatch
+
 func aocD17(_ input: [(x: ClosedRange<Int>, y: ClosedRange<Int>)]) {
 	let minX = input.lazy.map { $0.x.lowerBound }.min()! - 1
 	let maxX = input.lazy.map { $0.x.upperBound }.max()! + 1
@@ -21,18 +60,18 @@ func aocD17(_ input: [(x: ClosedRange<Int>, y: ClosedRange<Int>)]) {
 	let maxY = input.lazy.map { $0.y.upperBound }.max()!
 	let xbounds = minX...maxX
 	let ybounds = minY...maxY
-	var map = [[Area]](repeating: [Area](repeating: .sand, count: xbounds.count), count: ybounds.count)
+	var map = Grid(repeating: Area.sand, x: xbounds, y: ybounds)
 	for (xrange, yrange) in input {
 		for x in xrange {
 			for y in yrange {
-				map[y - minY][x - minX] = .clay
+				map[x: x, y: y] = .clay
 			}
 		}
 	}
 	func pourDown(x: Int, y: Int) -> Bool {
 		var newY = y
-		while map[newY-minY][x-minX] != .clay {
-			map[newY-minY][x-minX] = .flowingWater
+		while map[x: x, y: newY] != .clay {
+			map[x: x, y: newY] = .flowingWater
 			newY += 1
 			if !ybounds.contains(newY) {
 				return true
@@ -48,8 +87,8 @@ func aocD17(_ input: [(x: ClosedRange<Int>, y: ClosedRange<Int>)]) {
 		var lX = x
 		var rX = x
 		var spilled = false
-		while map[y-minY][lX-minX] != .clay {
-			let below = map[y-minY + 1][lX-minX]
+		while map[x: lX, y: y] != .clay {
+			let below = map[x: lX, y: y + 1]
 			if below == .sand {
 				// print(map.lazy.map({ String($0.lazy.map { $0.char }) }).joined(separator: "\n"))
 				spilled = pourDown(x: lX, y: y) || spilled
@@ -59,13 +98,13 @@ func aocD17(_ input: [(x: ClosedRange<Int>, y: ClosedRange<Int>)]) {
 				spilled = true
 				break
 			}
-			map[y-minY][lX-minX] = .water
+			map[x: lX, y: y] = .water
 			lX -= 1
 		}
-		while map[y-minY][rX-minX] != .clay {
-			let below = map[y-minY + 1][rX-minX]
+		while map[x: rX, y: y] != .clay {
+			let below = map[x: rX, y: y + 1]
 			if below == .sand {
-				// rint(map.lazy.map({ String($0.lazy.map { $0.char }) }).joined(separator: "\n"))
+				// print(map.lazy.map({ String($0.lazy.map { $0.char }) }).joined(separator: "\n"))
 				spilled = pourDown(x: rX, y: y) || spilled
 				break
 			}
@@ -73,23 +112,30 @@ func aocD17(_ input: [(x: ClosedRange<Int>, y: ClosedRange<Int>)]) {
 				spilled = true
 				break
 			}
-			map[y-minY][rX-minX] = .water
+			map[x: rX, y: y] = .water
 			rX += 1
 		}
 		if spilled {
 			for x in lX...rX {
-				if map[y-minY][x-minX] == .water {
-					map[y-minY][x-minX] = .flowingWater
+				if map[x: x, y: y] == .water {
+					map[x: x, y: y] = .flowingWater
 				}
 			}
 		}
 		return spilled
 	}
+	let start = DispatchTime.now()
 	_ = pourDown(x: 500, y: minY)
-	print(map.lazy.map({ String($0.lazy.map { $0.char }) }).joined(separator: "\n"))
+	let end = DispatchTime.now()
+	let allWater = map.storage.lazy.filter({ $0.isWater }).count
+	let containedWater = map.storage.lazy.filter({ $0 == .water }).count
+	let endCounting = DispatchTime.now()
+	print(map.rows.lazy.map({ String($0.lazy.map { $0.char }) }).joined(separator: "\n"))
 	print("""
-		      All water: \(map.lazy.flatMap({ $0 }).filter({ $0.isWater }).count)
-		Contained water: \(map.lazy.flatMap({ $0 }).filter({ $0 == .water }).count)
+		      All water: \(allWater)
+		Contained water: \(containedWater)
+		      Pour time: \(Double(end.uptimeNanoseconds - start.uptimeNanoseconds) / 1_000)µs
+		  Counting time: \(Double(endCounting.uptimeNanoseconds - end.uptimeNanoseconds) / 1_000)µs
 		""")
 }
 
