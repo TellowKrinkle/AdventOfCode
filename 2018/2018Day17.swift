@@ -14,6 +14,36 @@ enum Area {
 	}
 }
 
+struct Point: Hashable, Comparable {
+	var x: Int
+	var y: Int
+
+	static func +(lhs: Point, rhs: Point) -> Point {
+		return Point(x: lhs.x + rhs.x, y: lhs.y + rhs.y)
+	}
+
+	static func +=(lhs: inout Point, rhs: Point) {
+		lhs = lhs + rhs
+	}
+
+	static func <(lhs: Point, rhs: Point) -> Bool {
+		return lhs.y != rhs.y ? lhs.y < rhs.y : lhs.x < rhs.x
+	}
+
+	/// Point to the left of this one
+	var  left: Point { return Point(x: x - 1, y: y) }
+	/// Point to the right of this one
+	var right: Point { return Point(x: x + 1, y: y) }
+	/// Point above this one **on a grid with the origin in the top left**
+	var above: Point { return Point(x: x, y: y - 1) }
+	/// Point below this one **on a grid with the origin in the top left**
+	var below: Point { return Point(x: x, y: y + 1) }
+
+	var adjacent: [Point] {
+		return [above, left, right, below]
+	}
+}
+
 struct Grid<Element> {
 	var xRange: ClosedRange<Int>
 	var yRange: ClosedRange<Int>
@@ -37,6 +67,15 @@ struct Grid<Element> {
 			let xIndex = x - xRange.lowerBound
 			let yIndex = y - yRange.lowerBound
 			storage[xRange.count * yIndex + xIndex] = newValue
+		}
+	}
+
+	subscript(point: Point) -> Element {
+		get {
+			return self[x: point.x, y: point.y]
+		}
+		set {
+			self[x: point.x, y: point.y] = newValue
 		}
 	}
 
@@ -68,64 +107,62 @@ func aocD17(_ input: [(x: ClosedRange<Int>, y: ClosedRange<Int>)]) {
 			}
 		}
 	}
-	func pourDown(x: Int, y: Int) -> Bool {
-		var newY = y
-		while map[x: x, y: newY] != .clay {
-			map[x: x, y: newY] = .flowingWater
-			newY += 1
-			if !ybounds.contains(newY) {
+	func pourDown(at point: Point) -> Bool {
+		var pt = point
+		while map[pt] != .clay {
+			map[pt] = .flowingWater
+			pt = pt.below
+			if !ybounds.contains(pt.y) {
 				return true
 			}
 		}
 		repeat {
-			// print(map.lazy.map({ String($0.lazy.map { $0.char }) }).joined(separator: "\n"))
-			newY -= 1
-		} while !pourSideways(x: x, y: newY) && newY > y
-		return newY != y
+			// print(map.rows.lazy.map({ String($0.lazy.map { $0.char }) }).joined(separator: "\n"))
+			pt = pt.above
+		} while !pourSideways(at: pt) && pt.y > point.y
+		return pt != point
 	}
-	func pourSideways(x: Int, y: Int) -> Bool {
-		var lX = x
-		var rX = x
+	func pourSideways(at point: Point) -> Bool {
+		var l = point // Will be moved left until spillage or wall
+		var r = point // Will be moved right until spillage or wall
 		var spilled = false
-		while map[x: lX, y: y] != .clay {
-			let below = map[x: lX, y: y + 1]
-			if below == .sand {
-				// print(map.lazy.map({ String($0.lazy.map { $0.char }) }).joined(separator: "\n"))
-				spilled = pourDown(x: lX, y: y) || spilled
+		while map[l] != .clay {
+			if map[l.below] == .sand {
+				// print(map.rows.lazy.map({ String($0.lazy.map { $0.char }) }).joined(separator: "\n"))
+				spilled = pourDown(at: l) || spilled
 				break
 			}
-			else if below == .flowingWater {
+			else if map[l.below] == .flowingWater {
 				spilled = true
 				break
 			}
-			map[x: lX, y: y] = .water
-			lX -= 1
+			map[l] = .water
+			l = l.left
 		}
-		while map[x: rX, y: y] != .clay {
-			let below = map[x: rX, y: y + 1]
-			if below == .sand {
-				// print(map.lazy.map({ String($0.lazy.map { $0.char }) }).joined(separator: "\n"))
-				spilled = pourDown(x: rX, y: y) || spilled
+		while map[r] != .clay {
+			if map[r.below] == .sand {
+				// print(map.rows.lazy.map({ String($0.lazy.map { $0.char }) }).joined(separator: "\n"))
+				spilled = pourDown(at: r) || spilled
 				break
 			}
-			else if below == .flowingWater {
+			else if map[r.below] == .flowingWater {
 				spilled = true
 				break
 			}
-			map[x: rX, y: y] = .water
-			rX += 1
+			map[r] = .water
+			r = r.right
 		}
 		if spilled {
-			for x in lX...rX {
-				if map[x: x, y: y] == .water {
-					map[x: x, y: y] = .flowingWater
+			for x in l.x...r.x {
+				if map[x: x, y: l.y] == .water {
+					map[x: x, y: l.y] = .flowingWater
 				}
 			}
 		}
 		return spilled
 	}
 	let start = DispatchTime.now()
-	_ = pourDown(x: 500, y: minY)
+	_ = pourDown(at: Point(x: 500, y: minY))
 	let end = DispatchTime.now()
 	let allWater = map.storage.lazy.filter({ $0.isWater }).count
 	let containedWater = map.storage.lazy.filter({ $0 == .water }).count
