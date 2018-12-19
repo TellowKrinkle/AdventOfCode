@@ -72,8 +72,8 @@ func makeC(_ input: [Instruction], ip: Int, allowAllJumps: Bool = false) -> Stri
 		#define badJump(line, reg) if (1) { fprintf(stderr, "Made a jump at l%d with an unsupported offset of %ld.  Only offsets of 0 and 1 are supported.\\n", (line), (reg)); abort(); }
 		"""
 	var finalOutput = """
-		#import <stdlib.h>
-		#import <stdio.h>
+		#include <stdlib.h>
+		#include <stdio.h>
 		\(allowAllJumps ? doJumpMacro : badJumpMacro)
 		void printRegs(long *r) {
 			printf("%ld %ld %ld %ld %ld %ld\\n", r[0], r[1], r[2], r[3], r[4], r[5]);
