@@ -20,8 +20,7 @@ struct Instruction {
 	var b: Int
 	var c: Int
 	init?<S: Sequence>(_ seq: S) where S.Element == Substring {
-		guard let tuple4 = seq.tuple4 else { return nil }
-		let (opcodestr, astr, bstr, cstr) = tuple4
+		guard let (opcodestr, astr, bstr, cstr) = seq.tuple4 else { return nil }
 		guard let opcode = Opcode(rawValue: String(opcodestr)), let a = Int(astr), let b = Int(bstr), let c = Int(cstr) else { return nil }
 		(self.opcode, self.a, self.b, self.c) = (opcode, a, b, c)
 	}
@@ -69,7 +68,7 @@ func makeC(_ input: [Instruction], ip: Int, allowAllJumps: Bool = false) -> Stri
 		#define doJump(x, line) switch (x) { \(input[1...].indices.lazy.map({ "case \($0-1): goto l\($0);" }).joined(separator: " ")) default: \(finalizingStatement(str: "(line)")) }
 		"""
 	let badJumpMacro = """
-		#define badJump(line, reg) if (1) { fprintf(stderr, "Made a jump at l%d with an unsupported offset of %ld.  Only offsets of 0 and 1 are supported.\\n", (line), (reg)); abort(); }
+		#define badJump(line, reg) if (1) { fprintf(stderr, "Made a jump at l%d with an unsupported offset of %ld.  Transpile with -allJumps to enable full jump support.\\n", (line), (reg)); abort(); }
 		"""
 	var finalOutput = """
 		#include <stdlib.h>
