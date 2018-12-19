@@ -113,7 +113,10 @@ func makeC(_ input: [Instruction], ip: Int, allowAllJumps: Bool = false) -> Stri
 			case (.seti, _, _):
 				return makeGoto(instr.a + 1, index: index)
 			default:
-				if !allowAllJumps { fatalError("Unsupported jump operation: \(instr), maybe add -allJumps to switch to all jumps mode?") }
+				if !allowAllJumps {
+					FileHandle.standardError.write("Unsupported jump operation: \(instr), maybe add -allJumps to switch to all jumps mode?\n".data(using: .utf8)!)
+					exit(EXIT_FAILURE)
+				}
 				return jump
 			}
 		}
