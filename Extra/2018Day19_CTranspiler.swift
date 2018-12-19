@@ -83,7 +83,7 @@ func makeC(_ input: [Instruction], ip: Int, allowAllJumps: Bool = false) -> Stri
 				r[i] = atoi(argv[i+1]);
 			}\n
 		"""
-	var instrs = [Int]()
+
 	func makeGoto(_ target: Int, index: Int) -> String {
 		if input.indices.contains(target) {
 			return "goto l\(target);"
