@@ -57,7 +57,7 @@ extension Instruction {
 	}
 }
 
-func makeC(_ input: [Instruction], ip: Int, allowAllJumps: Bool = false) -> String {
+func makeC(_ input: [Instruction], ip: Int, jumpTargets: [Int]) -> String {
 	func finalizingStatement(str pos: String) -> String {
 		return "r[\(ip)] = \(pos); printRegs(r); return 0;"
 	}
@@ -73,7 +73,7 @@ func makeC(_ input: [Instruction], ip: Int, allowAllJumps: Bool = false) -> Stri
 	var finalOutput = """
 		#include <stdlib.h>
 		#include <stdio.h>
-		\(allowAllJumps ? doJumpMacro : badJumpMacro)
+		\(jumpTargets.isEmpty ? doJumpMacro : badJumpMacro)
 		void printRegs(long *r) {
 			printf("%ld %ld %ld %ld %ld %ld\\n", r[0], r[1], r[2], r[3], r[4], r[5]);
 		}
@@ -92,6 +92,11 @@ func makeC(_ input: [Instruction], ip: Int, allowAllJumps: Bool = false) -> Stri
 			return finalizingStatement(at: index)
 		}
 	}
+		
+	func makeJump(_ str: String, index: Int, targets: [Int]) -> String {
+		let others = targets.lazy.map { "else if (\(str) == \($0)) { \(makeGoto(index + $0 + 1, index: index)) }" }.joined(separator: " ")
+		return "if (\(str) == 0) { goto l\(index+1); } \(others) else { badJump(\(index), \(str)); }"
+	}
 
 	let lines = input.enumerated().map { (pair) -> String in
 		let (index, instr) = pair
@@ -101,9 +106,9 @@ func makeC(_ input: [Instruction], ip: Int, allowAllJumps: Bool = false) -> Stri
 			case (.addr, instr.c, instr.c):
 				return makeGoto(index * 2 + 1, index: index)
 			case (.addr, instr.c, _):
-				return allowAllJumps ? jump : "if (r[\(instr.b)] == 0) { goto l\(index+1); } else if (r[\(instr.b)] == 1) { goto l\(index+2); } else { badJump(\(index), r[\(instr.b)]); }"
+				return jumpTargets.isEmpty ? jump : makeJump("r[\(instr.b)]", index: index, targets: jumpTargets)
 			case (.addr, _, instr.c):
-				return allowAllJumps ? jump : "if (r[\(instr.a)] == 0) { goto l\(index+1); } else if (r[\(instr.a)] == 1) { goto l\(index+2); } else { badJump(\(index), r[\(instr.a)]); }"
+				return jumpTargets.isEmpty ? jump : makeJump("r[\(instr.a)]", index: index, targets: jumpTargets)
 			case (.addi, instr.c, _):
 				return makeGoto(index + instr.b + 1, index: index)
 			case (.muli, instr.c, _):
@@ -113,7 +118,7 @@ func makeC(_ input: [Instruction], ip: Int, allowAllJumps: Bool = false) -> Stri
 			case (.seti, _, _):
 				return makeGoto(instr.a + 1, index: index)
 			default:
-				if !allowAllJumps {
+				if !jumpTargets.isEmpty {
 					FileHandle.standardError.write("Unsupported jump operation: \(instr), maybe add -allJumps to switch to all jumps mode?\n".data(using: .utf8)!)
 					exit(EXIT_FAILURE)
 				}
@@ -147,6 +152,8 @@ guard CommandLine.arguments.count > 1 else {
 		Otherwise, all jumps will be allowed, which may reduce the quality of
 		the C compiler's output
 
+		You can also specify a custom list of offset-based jumps with `-jumps 1 3 8 etc`
+
 		The outputted C program can be run with anywhere from 0 to 6 arguments,
 		representing the starting registers.  Registers not passed will start a 0
 		""")
@@ -163,5 +170,12 @@ let input = split.compactMap { line in
 }
 
 let allJumps = CommandLine.arguments[1...].lazy.map({ $0.lowercased() }).contains("-alljumps")
+var jumps = [1]
+if allJumps {
+	jumps = []
+}
+else if let offset = CommandLine.arguments[1...].lazy.map({ $0.lowercased() }).firstIndex(of: "-jumps") {
+	jumps = CommandLine.arguments[(offset + 1)...].map { if let a = Int($0) { return a } else { fatalError("Jump value \($0) must be an integer") } }
+}
 
-print(makeC(input, ip: binding, allowAllJumps: allJumps))
+print(makeC(input, ip: binding, jumpTargets: jumps))
