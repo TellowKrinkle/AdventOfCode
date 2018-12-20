@@ -11,6 +11,17 @@ extension Sequence where Element: Strideable {
 	}
 }
 
+extension MutableCollection {
+	mutating func mutateEach(_ mutator: (inout Element) throws -> Void) rethrows {
+		var i = startIndex
+		while i < endIndex {
+			try mutator(&self[i])
+			formIndex(after: &i)
+		}
+	}
+}
+
+
 struct Point: Hashable, Comparable {
 	var x: Int
 	var y: Int
@@ -113,94 +124,48 @@ extension Point {
 	}
 }
 
-class Path {
-	let movements: [Direction]
-	let next: [Path]
-	let finally: Path?
-
-	init(_ movements: [Direction], next: [Path], finally: Path?) {
-		self.movements = movements
-		self.next = next
-		self.finally = finally
-	}
-
-	init(string: inout Substring) {
-		if string.first == "^" { string = string.dropFirst() }
-		var movements: [Direction] = []
-		while let char = string.first, let dir = Direction(rawValue: char) {
-			_ = string.popFirst()
-			movements.append(dir)
-		}
-		self.movements = movements
-		if string.first == "(" {
-			_ = string.popFirst()
-			var paths = [Path]()
-			while true {
-				paths.append(Path(string: &string))
-				if string.first == "|" {
-					_ = string.popFirst()
-				}
-				else if string.first == ")" {
-					_ = string.popFirst()
-					break
-				}
-				else {
-					fatalError("Unexpected value in option listing: \(String(describing: string.first))")
-				}
-			}
-			self.next = paths
-			self.finally = Path(string: &string)
+func parse(_ string: Substring) -> Grid<Spot> {
+	var currentPoints = [Point(x: 0, y: 0)]
+	var prevPoints = [[Point]]()
+	var nextPoints = [Set<Point>]()
+	var places: [Point: Spot] = [currentPoints[0]: .room]
+	func goDirection(_ dir: Direction, from pos: Point) -> Point {
+		var pos = pos.go(to: dir)
+		if (dir == .north || dir == .south) {
+			places[pos] = .hdoor
+			places[pos.left] = .wall
+			places[pos.right] = .wall
 		}
 		else {
-			self.next = []
-			self.finally = nil
+			places[pos] = .vdoor
+			places[pos.above] = .wall
+			places[pos.below] = .wall
 		}
+		pos = pos.go(to: dir)
+		places[pos] = .room
+		return pos
 	}
-}
-
-func aocD20(_ input: Path) {
-	var startingPos = Point(x: 0, y: 0)
-	var places: [Point: Spot] = [startingPos: .room]
-
-	var maxDistance = 0
-
-	var alreadyGone: [Point: Set<ObjectIdentifier>] = [:]
-
-	func follow(path: Path, from point: Point, finally: [Path]) {
-		guard alreadyGone[point, default: []].insert(ObjectIdentifier(path)).inserted else {
-			return
-		}
-		var pos = point
-		for dir in path.movements {
-			pos = pos.go(to: dir)
-			if (dir == .north || dir == .south) {
-				places[pos] = .hdoor
-				places[pos.left] = .wall
-				places[pos.right] = .wall
-			}
-			else {
-				places[pos] = .vdoor
-				places[pos.above] = .wall
-				places[pos.below] = .wall
-			}
-			pos = pos.go(to: dir)
-			places[pos] = .room
-		}
-		if path.next.isEmpty {
-			var finally = finally
-			if let next = finally.popLast() {
-				follow(path: next, from: pos, finally: finally)
-			}
+	for char in string {
+		if let direction = Direction(rawValue: char) {
+			currentPoints.mutateEach { $0 = goDirection(direction, from: $0) }
 		}
 		else {
-			var finally = finally
-			path.finally.map { finally.append($0) }
-			for next in path.next {
-				follow(path: next, from: pos, finally: finally)
+			switch char {
+			case "(":
+				prevPoints.append(currentPoints)
+				nextPoints.append([])
+			case "|":
+				nextPoints[nextPoints.count - 1].formUnion(currentPoints)
+				currentPoints = prevPoints.last!
+			case ")":
+				nextPoints[nextPoints.count - 1].formUnion(currentPoints)
+				currentPoints = Array(nextPoints.popLast()!)
+				_ = prevPoints.popLast()
+			default:
+				fatalError()
 			}
 		}
 	}
-	follow(path: input, from: startingPos, finally: [])
 	let xBounds = places.lazy.map({ $0.key.x }).minmax()!
 	let yBounds = places.lazy.map({ $0.key.y }).minmax()!
 	var grid = Grid(repeating: Spot.wall, x: xBounds, y: yBounds)
@@ -209,6 +174,11 @@ func aocD20(_ input: Path) {
 	}
 	grid[x: 0, y: 0] = .start
 	print(grid.convertedDescription({ $0.rawValue }))
+	return grid
+}
+
+func aocD20(_ grid: Grid<Spot>) {
+	let startingPos = Point(x: 0, y: 0)
 	var distance = 0
 	var distances = [startingPos: 0]
 	var last = [startingPos]
@@ -236,7 +206,6 @@ import Foundation
 let str = try! String(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1]))
 
 var substr = str.dropFirst().dropLast()
-let path = Path(string: &substr)
-guard substr.isEmpty else { fatalError() }
-
-aocD20(path)
+let grid = parse(substr)
+print(grid.convertedDescription({ $0.rawValue }))
+aocD20(grid)
