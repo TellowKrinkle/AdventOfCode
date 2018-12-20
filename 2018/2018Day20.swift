@@ -173,7 +173,6 @@ func parse(_ string: Substring) -> Grid<Spot> {
 		grid[point] = type
 	}
 	grid[x: 0, y: 0] = .start
-	print(grid.convertedDescription({ $0.rawValue }))
 	return grid
 }
 
