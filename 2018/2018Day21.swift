@@ -16,8 +16,7 @@ struct Instruction {
 	var b: Int
 	var c: Int
 	init?<S: Sequence>(_ seq: S) where S.Element == Substring {
-		guard let tuple4 = seq.tuple4 else { return nil }
-		let (opcodestr, astr, bstr, cstr) = tuple4
+		guard let (opcodestr, astr, bstr, cstr) = seq.tuple4 else { return nil }
 		guard let opcode = Opcode(rawValue: String(opcodestr)), let a = Int(astr), let b = Int(bstr), let c = Int(cstr) else { return nil }
 		(self.opcode, self.a, self.b, self.c) = (opcode, a, b, c)
 	}
