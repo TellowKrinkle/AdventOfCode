@@ -28,14 +28,13 @@ func aocD23a(_ input: [(pt: Point3D, radius: Int)]) {
 	print(inRange.count)
 }
 
-func aocD23b(_ input: [(pt: Point3D, radius: Int)]) {
+func aocD23b(_ input: [(pt: Point3D, radius: Int)], searchSize: Int) {
+	// Will search searchSize^3 points each round
+	// Bigger numbers are more likely to find the solution but are slower
 	let xRange = input.lazy.map({ $0.pt.x }).minmax()!
 	let yRange = input.lazy.map({ $0.pt.y }).minmax()!
 	let zRange = input.lazy.map({ $0.pt.z }).minmax()!
 
-	// Will search searchSize^3 points each round
-	// Bigger numbers are more likely to find the solution but are slower
-	let searchSize = 16
 	let largestRange = max(xRange.count, max(yRange.count, zRange.count))
 	let center = Point3D(x: 0, y: 0, z: 0)
 	var best = center
@@ -82,6 +81,13 @@ extension Sequence {
 	}
 }
 
+extension Collection {
+	func get(_ index: Index) -> Element? {
+		guard indices.contains(index) else { return nil }
+		return self[index]
+	}
+}
+
 import Foundation
 let str = try! String(contentsOf: URL(fileURLWithPath: CommandLine.arguments[1]))
 let split = str.split(separator: "\n")
@@ -90,5 +96,7 @@ let input = split.map { line -> (pt: Point3D, radius: Int) in
 	return (pt: Point3D(x: x, y: y, z: z), radius: r)
 }
 
+let searchSize = CommandLine.arguments.get(2).flatMap(Int.init) ?? 32
+
 aocD23a(input)
-aocD23b(input)
+aocD23b(input, searchSize: searchSize)
